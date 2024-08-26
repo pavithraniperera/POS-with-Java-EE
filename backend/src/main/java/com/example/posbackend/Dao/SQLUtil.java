@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 
 public class SQLUtil {
 
+
     public static <T> T execute(String sql, Object... ob) throws SQLException, NamingException {
         Connection connection = DbConnection.getInstance().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(sql);

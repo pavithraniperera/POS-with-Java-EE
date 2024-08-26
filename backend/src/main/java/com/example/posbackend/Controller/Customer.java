@@ -2,6 +2,7 @@ package com.example.posbackend.Controller;
 
 import com.example.posbackend.Bo.CustomerBo;
 import com.example.posbackend.Bo.impl.CustomerBoImpl;
+import com.example.posbackend.DB.DbConnection;
 import com.example.posbackend.Dto.CustomerDto;
 import com.example.posbackend.Dto.UserDto;
 import jakarta.json.bind.Jsonb;
@@ -13,6 +14,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -21,6 +24,7 @@ import java.util.List;
 
 @WebServlet(urlPatterns = "/customer")
 public class Customer extends HttpServlet {
+    private static final Logger logger = LoggerFactory.getLogger(Customer.class);
     private CustomerBo customerBO = new CustomerBoImpl();
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -29,6 +33,7 @@ public class Customer extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        logger.info("Called doGet Method");
         String customerId = req.getParameter("id");
         System.out.println(customerId);
         resp.setContentType("application/json");
@@ -43,6 +48,7 @@ public class Customer extends HttpServlet {
 
                 if (customer != null) {
                     String jsonResponse = jsonb.toJson(customer);
+                    logger.info("send response to the front end");
                     writer.write(jsonResponse);
                     resp.setStatus(HttpServletResponse.SC_OK);
                 } else {
@@ -57,6 +63,7 @@ public class Customer extends HttpServlet {
                 resp.setStatus(HttpServletResponse.SC_OK);
             }
         } catch (Exception e) {
+            logger.error("error happened while retreving data");
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             throw new RuntimeException(e);
         }

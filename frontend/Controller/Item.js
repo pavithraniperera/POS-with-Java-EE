@@ -1,12 +1,41 @@
-import AddedItemModal from "../model/AddedItemModal.js";
-import {customerArray} from "../db/database.js";
-import {proceedItems} from "../db/database.js";
-import {orders} from "../db/database.js";
-import OrderModal from "../model/OrderModal.js";
-import {itemArray} from "../db/database.js";
+
 import {loadItemTable} from "./AddedItem.js"
 
 
+
+export function loadOrderTable(){
+    $("#orderTable").empty();
+
+    var orders=[];
+    $.ajax({
+        url: 'http://localhost:8080/posbackend/order',
+        type: 'GET',
+        success: function(response) {
+            $("#orderTable").empty();
+            orders =response;
+            console.log(response)
+            orders.forEach((item) => {
+                var newRow = `
+                    <tr>
+                        <td class="id">${item.orderId}</td>
+                        <td class="custId">${item.customerId}</td>
+                        <td class="custName">${item.customerName}</td>
+                        <td class="total">${item.total}</td>
+                        <td class="date">${item.date}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                            <button class="btn btn-warning btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                `;
+                $("#orderTable").append(newRow);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to retrieve orders:", error);
+        }
+    });
+}
 
  $(document).ready(function (){
     $(document).on("click", ".item-button", function () {
@@ -153,9 +182,8 @@ import {loadItemTable} from "./AddedItem.js"
 
             //  item subtotal
             var itemSubtotal = itemPrice * itemQuantity;
-            /*let items = new AddedItemModal(itemName,itemPrice,itemQuantity);
-            proceedItems.push(items);
-*/
+
+
 
             //  total price
             totalPrice += itemSubtotal;
@@ -188,7 +216,7 @@ import {loadItemTable} from "./AddedItem.js"
         });
 
         console.log("Total Price:", totalPrice);
-        console.log(proceedItems);
+     /*   console.log(proceedItems);*/
         $("#payTotal").text(totalPrice);
         setTotalAmount(totalPrice);
         setCustomerId();
@@ -198,7 +226,7 @@ import {loadItemTable} from "./AddedItem.js"
 
      $("#pay").click(function () {
          var date = getCurrentTime();
-         var orderId = generateOrderId();
+
          var customerId ;
          $("#customerId").change(function() {
               customerId = $(this).val();
@@ -206,71 +234,67 @@ import {loadItemTable} from "./AddedItem.js"
          });
          console.log(customerId)
          console.log(orderId);
-         // Create a  copy of proceedItems
-        /* let itemsCopy = proceedItems.map(item => {
-             return {
-                 name: item.name,
-                 price: item.price,
-                 quantity: item.quantity,
-             };
-         });*/
-         let orderDto = {
-             orderId: orderId,
-             customerId: customerId,
-             itemDtoList: items,
-             date: date,
-             total: parseFloat($("#payment").text())
-         };
-         console.log(orderDto)
+
 
 
          // Send the order data to the backend via AJAX
+
          $.ajax({
-             url: 'http://localhost:8080/posbackend/order',
-             type: 'POST',
-             contentType: 'application/json',
-             data: JSON.stringify(orderDto),
-             success: function (response) {
-                 // Handle the response (order saved successfully)
-                 console.log("Order saved successfully:", response);
+             url: 'http://localhost:8080/posbackend/orderHistory',
+             type: 'GET',
+             success: function(response) {
+                 var lastOrderId = response.lastOrderId || null; // Handle null if no order exists
+                 var orderId = generateNextOrderId(lastOrderId);
+                 console.log("Generated Order ID:", orderId);
 
-                 // Update stock quantities on the front-end (if needed)
-                 /* updateStockItem();*/
+                 let orderDto = {
+                     orderId: orderId,
+                     customerId: selectedCustomerId,
+                     itemDtoList: items,
+                     date: date,
+                     total: parseFloat($("#payment").text())
+                 };
+                 console.log(orderDto);
 
-                 // Reload the item and order tables
-                 loadItemTable();
-                 //loadOrderTable();
+                 // Send the order data to the backend via AJAX
+                 $.ajax({
+                     url: 'http://localhost:8080/posbackend/order',
+                     type: 'POST',
+                     contentType: 'application/json',
+                     data: JSON.stringify(orderDto),
+                     success: function (response) {
+                         // Handle the response (order saved successfully)
+                         console.log("Order saved successfully:", response);
 
-                 // Clear proceedItems and cart UI
-                 //proceedItems.length = 0;
-                 clearCart();
+                         // Reload the item and order tables
+                         loadItemTable();
+                         loadOrderTable();
 
-                 // Hide checkout modal and show success message
-                 $("#checkoutModal").modal("hide");
-                 $("#text").text("Order Successful");
-                 $("#successModal").modal("show");
+                         // Clear proceedItems and cart UI
+                         clearCart();
+
+                         // Hide checkout modal and show success message
+                         $("#checkoutModal").modal("hide");
+                         $("#text").text("Order Successful");
+                         $("#successModal").modal("show");
+                     },
+                     error: function (xhr, status, error) {
+                         // Handle errors
+                         console.error("Error saving order:", error);
+                         $("#text").text("Order Failed. Please try again.");
+                         $("#successModal").modal("show");
+                     }
+                 });
              },
              error: function (xhr, status, error) {
-                 // Handle errors
-                 console.error("Error saving order:", error);
-                 $("#text").text("Order Failed. Please try again.");
-                 /* $("#successModal").modal("show");*/
+                 console.error("Error retrieving last order ID:", error);
+                 $("#text").text("Unable to process order. Please try again.");
+                 $("#successModal").modal("show");
              }
          });
 
-       /* let order = new OrderModal(selectedCustomer,itemsCopy,discountedTotal,date,orderId);
-        orders.push(order);
-        console.log(orders);
-         updateStockItem();
-         loadItemTable();
-        loadOrderTable();
-         // Clear proceedItems for the next order
-         proceedItems.length = 0;
-         // Clear cart UI
-         clearCart();
-         $("#checkoutModal").modal("hide");
-         $("#text").text("Order Successful");
-         $("#successModal").modal("show");*/
+
+
 
      });
 
@@ -288,14 +312,43 @@ import {loadItemTable} from "./AddedItem.js"
     }
     var orderNumber=1;
     function generateOrderId() {
-        const orderId = 'O' + pad(orderNumber, 3); // Pad the order number with leading zeros like O001
-        orderNumber++; // Increment the order number for the next order
-        return orderId;
+        var nextOrderId;
+        $.ajax({
+            url: 'http://localhost:8080/posbackend/orderHistory',  // Update the URL as needed
+            type: 'GET',
+            success: function(response) {
+                if (response.lastOrderId) {
+                    console.log(response);
+                    console.log(response.lastOrderId)
+                    // Generate the next order ID
+                     nextOrderId = generateNextOrderId(response.lastOrderId);
+
+
+
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Failed to retrieve last order ID:", error);
+            }
+        });
+        return nextOrderId;
     }
-    // Helper function to pad numbers with leading zeros to a specified length
-    function pad(number, length) {
-        return String(number).padStart(length, '0');
-    }
+     function generateNextOrderId(lastOrderId) {
+         if (!lastOrderId) {
+             // Start from O001 if there are no orders in the database
+             return "O001";
+         }
+
+         // Extract the numeric part from the lastOrderId (e.g., "O005" -> "005")
+         let numericPart = parseInt(lastOrderId.substring(1));
+
+         // Increment the numeric part
+         numericPart++;
+
+         // Format the new order ID (e.g., "O006")
+         return "O" + numericPart.toString().padStart(3, '0');
+     }
+
      var discountedTotal;
      function setTotalAmount(total){
          console.log(total);
@@ -393,41 +446,9 @@ import {loadItemTable} from "./AddedItem.js"
 
 
 
-     function loadOrderTable(){
-        $("#orderTable").empty();
-        orders.map((item,index)=>{
-
-            var newRow = `
-             <tr>
-                <td class="id">${item.orderId}</td>
-                <td class="custId">${item.customer.id}</td>
-                <td class="custName">${item.customer.name}</td>
-                <td class="total">${item.total}</td>
-                <td class="date">${item.date}</td>
-               
-                <td>
-                    <button class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
-                    <button class="btn btn-warning btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
-                </td>
-            </tr>
-        `; $("#orderTable").append(newRow);
-        });
-    }
 
 
 
-    function  updateStockItem(){
-        proceedItems.forEach(proceedItem => {
-            const stockItem = itemArray.find(item => item.id === proceedItem.id);
-            if (stockItem) {
-                stockItem.quantity -= proceedItem.quantity;
-                console.log(stockItem.quantity)
-            }
-        });
-
-
-
-    }
 
       //delete function
      $(document).on('click', '.delete-item-button', function () {

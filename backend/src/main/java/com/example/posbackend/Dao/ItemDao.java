@@ -18,4 +18,6 @@ public interface ItemDao {
     ItemEntity getByName(String itemName) throws SQLException,NamingException;
 
     boolean updateItemQuantity(int id, int quantity) throws SQLException,NamingException;
+
+    ItemEntity getItemById(int itemId) throws SQLException,NamingException;
 }

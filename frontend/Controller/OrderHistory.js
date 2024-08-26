@@ -1,7 +1,10 @@
-import {customerArray, orders, proceedItems} from "../db/database.js";
-/*import { loadOrderTable } from './Item.js'*/
+
+import { loadOrderTable } from './Item.js'
 var recordIndex;
 
+$(document).ready(function() {
+    loadOrderTable(); // Load orders when the page is ready
+});
 
 $("#orderTable").on("click","tr",function (){
     let index = $(this).index();
@@ -15,38 +18,49 @@ $("#orderTable").on("click","tr",function (){
     $("#orderId").val(orderId);
     $("#orderDate").val(date);
     $("#orderTotal").text(total);
-    let proceedItemsArray = getProceedItemsArray(orderId);
-    console.log(proceedItemsArray);
-    loadTable(proceedItemsArray);
+   // let proceedItemsArray = getProceedItemsArray(orderId);
+    /*console.log(proceedItemsArray);*/
+    $.ajax({
+        url: `http://localhost:8080/posbackend/order?id=${orderId}`,
+        type: 'GET',
+        success: function (response) {
+            // Assuming the response is an OrderDTO object containing order details and items array
+            let order = response;
+
+            // Set the order details in the form
+            $("#customerName").val(name);
+            $("#orderId").val(orderId);
+            $("#orderDate").val(date);
+            $("#orderTotal").text(total);
+            console.log(order.itemDtoList)
+            // Load the items into the table
+            loadTable(order.itemDtoList);
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to retrieve order details:", error);
+        }
+    });
+    //loadTable(proceedItemsArray);
 
 
 });
 
-function getProceedItemsArray(orderId) {
 
 
-    // Find the order with the matching order ID
-    let order = orders.find(order => order.orderId === orderId);
-
-    // If the order is found, return its proceedItems array; otherwise, return an empty array
-    return order ? order.items : [];
-}
-
-function loadTable(proceedItemsArray){
+function loadTable(itemsArray){
     $("#orderItemList").empty();
-    proceedItemsArray.map((item,index)=>{
-        var total = item.quantity*item.price;
+    itemsArray.map((item, index) => {
+        var total = item.quantity * item.price;
         var newRow = `
-             <tr>
+            <tr>
                 <td class="id">${item.name}</td>
                 <td class="custId">${item.quantity}</td>
                 <td class="castName">${item.price}</td>
                 <td class="total">${total}</td>
-                 
             </tr>
-        `; $("#orderItemList").append(newRow);
+        `;
+        $("#orderItemList").append(newRow);
     });
-
 }
 $("#clearFields").click(function (){
     clearFields();
@@ -64,22 +78,39 @@ function clearFields() {
     $("#orderItemList").empty();
 }
 $("#deleteBtn").click(function (){
-    orders.splice(recordIndex,1);
-    /*loadOrderTable();*/
-    $("#deleteModal").modal("hide");
-    clearFields();
-    $("#text").text("Successfully Deleted a Order");
-    $("#successModal").modal("show");
+    let orderId =   $("#orderId").val();
+    console.log(orderId)
+    $.ajax({
+        url: `http://localhost:8080/posbackend/order?id=${orderId}`,
+        type: 'DELETE',
+        success: function (response) {
+            console.log("order deleted successfully");
+
+            // Refresh the table or perform other UI updates here
+            loadOrderTable();
+            $("#deleteModal").modal("hide");
+            clearFields();
+            $("#text").text("Successfully Deleted a Order");
+            $("#successModal").modal("show");
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to delete customer:", error);
+            alert("Failed to delete customer");
+        }
+    });
+
 })
 
 function displayFilteredOrders(filteredOrders) {
+    console.log(filteredOrders)
+    console.log(Array.isArray(filteredOrders))
     $("#filteredOrdersTable").empty();
-    filteredOrders.forEach(order => {
+    filteredOrders.map(order => {
         var newRow = `
             <tr>
                 <td class="orderId">${order.orderId}</td>
-                <td class="custId">${order.customer.id}</td>
-                <td class="CustName">${order.customer.name}</td>
+                <td class="custId">${order.customerId}</td>
+                <td class="CustName">${order.customerName}</td>
                 <td class="total">${order.total}</td>
                 <td class="date">${order.date.toLocaleString()}</td>
             </tr>
@@ -103,21 +134,34 @@ $("#filteredOrdersTable").on("click","tr",function (){
     $("#orderId").val(orderId);
     $("#orderDate").val(date);
     $("#orderTotal").text(total);
-    let proceedItemsArray = getProceedItemsArray(orderId);
-    loadTable(proceedItemsArray);
+
     
 })
 
 
 function searchOrders(customerId) {
+    let filteredOrders = [];
+    $.ajax({
+        url: `http://localhost:8080/posbackend/orderHistory?id=${customerId}`,
+        type: 'GET',
+        success: function (response) {
+           filteredOrders = response;
+           console.log(response)
+            if (filteredOrders.length === 0) {
+                $("#errorText").text("No orders found for the given customer ID.")
+                $("#errorModal").modal("show");
+                return
+            }
+            displayFilteredOrders(filteredOrders);
 
-    let filteredOrders = orders.filter(order => order.customer.id === customerId);
-    if (filteredOrders.length === 0) {
-        $("#errorText").text("No orders found for the given customer ID.")
-        $("#errorModal").modal("show");
-        return
-    }
-    displayFilteredOrders(filteredOrders);
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to retrieve order details:", error);
+        }
+    });
+
+
+
 
 }
 

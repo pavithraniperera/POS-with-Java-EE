@@ -12,6 +12,7 @@ import java.util.List;
 
 public class CustomerDaoImpl implements CustomerDao {
 
+
     @Override
     public boolean save(CustomerEntity customer) throws SQLException, NamingException {
         String sql = "INSERT INTO customers (id, name, contact, address, note) VALUES (?, ?, ?, ?, ?)";

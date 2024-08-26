@@ -84,4 +84,23 @@ public class ItemDaoImpl implements ItemDao {
         String sql = "UPDATE items SET quantity = quantity - ? WHERE id = ?";
         return SQLUtil.execute(sql, quantity, id);
     }
+
+    @Override
+    public ItemEntity getItemById(int itemId) throws SQLException, NamingException {
+        String sql = "SELECT * FROM items WHERE id=?";
+        ResultSet resultSet = SQLUtil.execute(sql,itemId);
+        ItemEntity entity = null;
+        while (resultSet.next()){
+            entity=new ItemEntity(
+                    resultSet.getInt(1),
+                    resultSet.getString(2),
+                    resultSet.getDouble(3),
+                    resultSet.getInt(4),
+                    resultSet.getString(5),
+                    resultSet.getString(6),
+                    resultSet.getString(7));
+        }
+
+        return entity;
+    }
 }

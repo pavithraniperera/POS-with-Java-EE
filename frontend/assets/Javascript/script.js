@@ -146,7 +146,7 @@ function handleSignIn(users) {
 $(document).ready(function () {
         // Add event listener to the form for form submission
         $("#signIn").click(function () {
-           /* $.ajax({
+            $.ajax({
                     url: "http://localhost:8080/posbackend/user",
                     type: "GET",
                     contentType: "application/json",
@@ -158,7 +158,7 @@ $(document).ready(function () {
                     alert("Error fetching users: " + xhr.responseText);
                 }
                 }
-            )*/
+            )
             $("#login").css(css1)
             $("#dashboard").css(css2);
             handleNavClick("nav-home");
