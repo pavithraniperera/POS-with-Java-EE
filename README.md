@@ -6,7 +6,7 @@ The POS System API provides endpoints to manage orders, customers, and items wit
 ## Installation
 1. Clone the repository:
    ```
-   git clone https://github.com/username/pos-system.git
+   git clone https://github.com/username/pos-system.git](https://github.com/pavithraniperera/POS-with-Java-EE.git
    ```
 2. Set up the database:
    - Ensure MySQL is installed.
